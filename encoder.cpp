@@ -21,6 +21,12 @@
 #include "jpgd.h"
 #include "stb_image.h"
 #include <ctype.h>
+#include <iostream>
+#include <fstream>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
 
 #if defined(_MSC_VER)
 #define strcasecmp _stricmp
@@ -269,6 +275,18 @@ int main(int arg_c, char *ppArgs[])
     int subsampling = -1;
     bool use_jpgd = true;
 
+	// Create data file
+	ofstream data("png_to_jpeg_2430_baseline.csv", ofstream::out);
+	char *image = "images/space2430.png";
+	char *output = "output.jpg";
+	char *quality = "50";
+	// Output image size to file
+	data << "resolution_2430";
+	ppArgs[1] = image;
+	ppArgs[2] = output;
+	ppArgs[3] = quality;
+	arg_c = 4;
+
     int arg_index = 1;
     while ((arg_index < arg_c) && (ppArgs[arg_index][0] == '-')) {
         switch (tolower(ppArgs[arg_index][1])) {
@@ -363,10 +381,10 @@ int main(int arg_c, char *ppArgs[])
         }
         void *pBuf = malloc(buf_size);
 
-        if (!jpge::compress_image_to_jpeg_file_in_memory(pBuf, buf_size, width, height, req_comps, pImage_data, params)) {
-            log_printf("Failed creating JPEG data!\n");
-            return EXIT_FAILURE;
-        }
+		if (!jpge::compress_image_to_jpeg_file_in_memory(pBuf, buf_size, width, height, req_comps, pImage_data, params)) {
+			log_printf("Failed creating JPEG data!\n");
+			return EXIT_FAILURE;
+		}
 
         FILE *pFile = fopen(pDst_filename, "wb");
         if (!pFile) {
@@ -384,11 +402,29 @@ int main(int arg_c, char *ppArgs[])
             return EXIT_FAILURE;
         }
     } else {
-
-        if (!jpge::compress_image_to_jpeg_file(pDst_filename, width, height, req_comps, pImage_data, params)) {
-            log_printf("Failed writing to output file!\n");
-            return EXIT_FAILURE;
-        }
+		/*
+		**  COMPRESSION HAPPENS HERE
+		*/
+		// Execute 100 iterations
+		for (size_t iters = 0; iters < 100; ++iters)
+		{
+			// Output iteration to console
+			std::cout << "Iteration: " << iters << std::endl;
+			// Get the start time
+			auto start = high_resolution_clock::now();
+			// Compress
+			if (!jpge::compress_image_to_jpeg_file(pDst_filename, width, height, req_comps, pImage_data, params)) {
+				log_printf("Failed writing to output file!\n");
+				return EXIT_FAILURE;
+			}
+			// Get the end time
+			auto end = high_resolution_clock::now();
+			// Get the total time
+			auto total = end - start;
+			// Convert to milliseconds and output to file
+			data << ", " << duration_cast<microseconds>(total).count();
+		}
+		data << endl;
     }
 
     const long comp_file_size = get_file_size(pDst_filename);
