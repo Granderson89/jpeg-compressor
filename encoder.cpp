@@ -17,6 +17,7 @@
 */
 
 // Note: jpge.cpp/h and jpgd.cpp/h are completely standalone, i.e. they do not have any dependencies to each other.
+#define __CL_ENABLE_EXCEPTIONS
 #include "jpge.h"
 #include "jpgd.h"
 #include "stb_image.h"
@@ -25,9 +26,12 @@
 #include <fstream>
 #include <chrono>
 #include <string>
+#include <vector>
+#include <CL/cl.hpp>
 
 using namespace std;
 using namespace std::chrono;
+using namespace cl;
 
 #if defined(_MSC_VER)
 #define strcasecmp _stricmp
@@ -281,7 +285,7 @@ int main(int arg_c, char *ppArgs[])
 	char *image = "images/space1080.png";
 	char *output = "output.jpg";
 
-	for (int q = 10; q <= 100; q += 10)
+	for (int q = 10; q <= 10; q += 10)
 	{
 		string s = to_string(q);
 		char *quality = (char*)s.c_str();
@@ -417,7 +421,7 @@ int main(int arg_c, char *ppArgs[])
 			**  COMPRESSION HAPPENS HERE
 			*/
 			// Execute 100 iterations
-			for (size_t iters = 0; iters < 100; ++iters)
+			for (std::size_t iters = 0; iters < 100; ++iters)
 			{
 				// Output iteration to console
 				std::cout << "Iteration: " << iters << std::endl;

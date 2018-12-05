@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#define __CL_ENABLE_EXCEPTIONS
 
 #include "jpge.h"
 
@@ -22,14 +23,23 @@
 #include <string.h>
 #include <stdio.h>
 #include <cmath>
+#include <vector>
+#include <array>
+#include <iostream>
+#include <fstream>
+#include <CL/cl.hpp>
 
 #define JPGE_MAX(a,b) (((a)>(b))?(a):(b))
 #define JPGE_MIN(a,b) (((a)<(b))?(a):(b))
 
+
+using namespace std;
+using namespace cl;
+
 namespace jpge
 {
 
-static inline void *jpge_malloc(size_t nSize)
+static inline void *jpge_malloc(std::size_t nSize)
 {
     return malloc(nSize);
 }
@@ -54,12 +64,95 @@ template <class T> inline void clear_obj(T &obj)
 
 template<class T> static void RGB_to_YCC(image *img, const T *src, int width, int y)
 {
+	constexpr int ELEMENTS = 1088;
+	constexpr std::size_t DATA_SIZE = sizeof(int) * ELEMENTS;
+
+	// Initialise memory
+	// Input
+	std::array<float, ELEMENTS> srcRGB;
+	// Output
+	std::array<float, ELEMENTS> imgY;
+	std::array<float, ELEMENTS> imgC1;
+	std::array<float, ELEMENTS> imgC2;
+	//srcRGB = src;
+
+	// Initialise OpenCL
+	try
+	{
+		// Get the platforms
+		vector<Platform> platforms;
+		Platform::get(&platforms);
+
+		// Assume only one platform.  Get GPU devices.
+		vector<Device> devices;
+		platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &devices);
+
+		// Just to test, print out device 0 name
+		//cout << devices[0].getInfo<CL_DEVICE_NAME>() << endl;
+
+		// Create a context with these devices
+		Context context(devices);
+
+		// Create a command queue for device 0
+		CommandQueue queue(context, devices[0]);
+
+		// Create the buffers
+		Buffer buf_srcRGB(context, CL_MEM_READ_ONLY, DATA_SIZE);
+		Buffer buf_imgY(context, CL_MEM_READ_ONLY, DATA_SIZE);
+		Buffer buf_imgC1(context, CL_MEM_WRITE_ONLY, DATA_SIZE);
+		Buffer buf_imgC2(context, CL_MEM_WRITE_ONLY, DATA_SIZE);
+
+		// Copy data to the GPU
+		queue.enqueueWriteBuffer(buf_srcRGB, CL_TRUE, 0, DATA_SIZE, &src);
+
+		// Read in kernel source
+		ifstream file("rgb_to_ycc.cl");
+		string code(istreambuf_iterator<char>(file), (istreambuf_iterator<char>()));
+
+		// Create program
+		Program::Sources source(1, make_pair(code.c_str(), code.length() + 1));
+		Program program(context, source);
+
+		// Build program for devices
+		program.build(devices);
+
+		// Create the kernel
+		Kernel rgb_to_ycc_kernel(program, "rgb_to_ycc");
+
+		// Set kernel arguments
+		rgb_to_ycc_kernel.setArg(0, buf_imgY);
+		rgb_to_ycc_kernel.setArg(1, buf_imgC1);
+		rgb_to_ycc_kernel.setArg(2, buf_imgC2);
+		rgb_to_ycc_kernel.setArg(3, buf_srcRGB);
+		rgb_to_ycc_kernel.setArg(4, img->m_x);
+		rgb_to_ycc_kernel.setArg(5, width);
+		rgb_to_ycc_kernel.setArg(6, y);
+
+		// Execute kernel
+		NDRange global(ELEMENTS);
+		NDRange local(256);
+		queue.enqueueNDRangeKernel(rgb_to_ycc_kernel, NullRange, global, local);
+
+		// Copy result back.
+		queue.enqueueReadBuffer(buf_imgY, CL_TRUE, 0, DATA_SIZE, &imgY);
+		queue.enqueueReadBuffer(buf_imgC1, CL_TRUE, 0, DATA_SIZE, &imgC1);
+		queue.enqueueReadBuffer(buf_imgC2, CL_TRUE, 0, DATA_SIZE, &imgC2);
+
+		cout << "Finished" << endl;
+	}
+	catch (Error error)
+	{
+		cout << error.what() << "(" << error.err() << ")" << endl;
+	}
+
+
     for (int x = 0; x < width; x++) {
         const int r = src[x].r, g = src[x].g, b = src[x].b;
         img[0].set_px( (0.299     * r) + (0.587     * g) + (0.114     * b)-128.0, x, y);
         img[1].set_px(-(0.168736  * r) - (0.331264  * g) + (0.5       * b), x, y);
         img[2].set_px( (0.5       * r) - (0.418688  * g) - (0.081312  * b), x, y);
     }
+
 }
 
 template<class T> static void RGB_to_Y(image &img, const T *pSrc, int width, int y)
@@ -81,6 +174,11 @@ static void Y_to_YCC(image *img, const uint8 *pSrc, int width, int y)
 inline float image::get_px(int x, int y)
 {
     return m_pixels[y*m_x + x];
+}
+
+inline float* image::get_row_px(int y)
+{
+	return &m_pixels[y*m_x];
 }
 
 inline void image::set_px(float px, int x, int y)
