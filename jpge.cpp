@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <cmath>
+#include <omp.h>
 
 #define JPGE_MAX(a,b) (((a)>(b))?(a):(b))
 #define JPGE_MIN(a,b) (((a)<(b))?(a):(b))
@@ -824,6 +825,7 @@ bool jpeg_encoder::emit_end_markers()
 bool jpeg_encoder::compress_image()
 {
     for(int c=0; c < m_num_components; c++) {
+#pragma omp parallel for schedule(dynamic)
         for (int y = 0; y < m_image[c].m_y; y+= 8) {
             for (int x = 0; x < m_image[c].m_x; x += 8) {
                 dct_t sample[64];
@@ -833,6 +835,7 @@ bool jpeg_encoder::compress_image()
         }
     }
 
+#pragma omp parallel for schedule(dynamic)
     for (int y = 0; y < m_y; y+= m_mcu_h) {
         code_mcu_row(y, false);
     }
@@ -926,8 +929,8 @@ bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, in
     if (bpp != 1 && bpp != 3 && bpp != 4) {
         return false;
     }
-
-    for (int y = 0; y < height; y++) {
+#pragma omp parallel for schedule(dynamic)
+	for (int y = 0; y < height; y++) {
         if (m_num_components == 1) {
             load_mcu_Y(image_data + width * y * bpp, width, bpp, y);
         } else {
@@ -936,6 +939,7 @@ bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, in
     }
 
     for(int c=0; c < m_num_components; c++) {
+#pragma omp parallel for schedule(dynamic)
         for (int y = height; y < m_image[c].m_y; y++) {
             for(int x=0; x < m_image[c].m_x; x++) {
                 m_image[c].set_px(m_image[c].get_px(x, y-1), x, y);
