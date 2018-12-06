@@ -97,6 +97,7 @@ dctq_t *image::get_dctq(int x, int y)
 void image::subsample(image &luma, int v_samp)
 {
     if (v_samp == 2) {
+#pragma omp parallel for schedule(dynamic)
         for(int y=0; y < m_y; y+=2) {
             for(int x=0; x < m_x; x+=2) {
                 m_pixels[m_x/4*y + x/2] = blend_quad(x, y, luma);
@@ -834,7 +835,6 @@ bool jpeg_encoder::compress_image()
             }
         }
     }
-
 #pragma omp parallel for schedule(dynamic)
     for (int y = 0; y < m_y; y+= m_mcu_h) {
         code_mcu_row(y, false);

@@ -277,7 +277,7 @@ int main(int arg_c, char *ppArgs[])
     bool use_jpgd = true;
 
 	// Create data file
-	ofstream data("png_to_jpeg_baseline_res.csv", ofstream::out);
+	ofstream data("png_to_jpeg_omp.csv", ofstream::out);
 	// Set up constant arguments
 	char *output = "output.jpg";
 	char *quality = "50";
