@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#define __CL_ENABLE_EXCEPTIONS
 
 #include "jpge.h"
 
@@ -22,7 +23,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <cmath>
-#include <omp.h>
+#include <iostream>
+#include <vector>
+#include <CL/cl.hpp>
+
+using namespace std;
+using namespace cl;
 
 #define JPGE_MAX(a,b) (((a)>(b))?(a):(b))
 #define JPGE_MIN(a,b) (((a)<(b))?(a):(b))
@@ -30,7 +36,7 @@
 namespace jpge
 {
 
-static inline void *jpge_malloc(size_t nSize)
+static inline void *jpge_malloc(std::size_t nSize)
 {
     return malloc(nSize);
 }
@@ -55,11 +61,11 @@ template <class T> inline void clear_obj(T &obj)
 
 template<class T> static void RGB_to_YCC(image *img, const T *src, int width, int y)
 {
-    for (int x = 0; x < width; x++) {
-        const int r = src[x].r, g = src[x].g, b = src[x].b;
-        img[0].set_px( (0.299     * r) + (0.587     * g) + (0.114     * b)-128.0, x, y);
-        img[1].set_px(-(0.168736  * r) - (0.331264  * g) + (0.5       * b), x, y);
-        img[2].set_px( (0.5       * r) - (0.418688  * g) - (0.081312  * b), x, y);
+    for (int x = 0; x < width * 3; x+=3) {
+        const int r = src[x], g = src[x+1], b = src[x+2];
+        img[0].set_px( (0.299     * r) + (0.587     * g) + (0.114     * b)-128.0, x/3, y);
+        img[1].set_px(-(0.168736  * r) - (0.331264  * g) + (0.5       * b), x/3, y);
+        img[2].set_px( (0.5       * r) - (0.418688  * g) - (0.081312  * b), x/3, y);
     }
 }
 
@@ -97,7 +103,6 @@ dctq_t *image::get_dctq(int x, int y)
 void image::subsample(image &luma, int v_samp)
 {
     if (v_samp == 2) {
-#pragma omp parallel for schedule(dynamic)
         for(int y=0; y < m_y; y+=2) {
             for(int x=0; x < m_x; x+=2) {
                 m_pixels[m_x/4*y + x/2] = blend_quad(x, y, luma);
@@ -826,7 +831,6 @@ bool jpeg_encoder::emit_end_markers()
 bool jpeg_encoder::compress_image()
 {
     for(int c=0; c < m_num_components; c++) {
-#pragma omp parallel for schedule(dynamic)
         for (int y = 0; y < m_image[c].m_y; y+= 8) {
             for (int x = 0; x < m_image[c].m_x; x += 8) {
                 dct_t sample[64];
@@ -835,8 +839,8 @@ bool jpeg_encoder::compress_image()
             }
         }
     }
-#pragma omp parallel for schedule(dynamic)
-    for (int y = 0; y < m_y; y+= m_mcu_h) {
+
+	for (int y = 0; y < m_y; y+= m_mcu_h) {
         code_mcu_row(y, false);
     }
     compute_huffman_tables();
@@ -873,9 +877,9 @@ void jpeg_encoder::load_mcu_Y(const uint8 *pSrc, int width, int bpp, int y)
 void jpeg_encoder::load_mcu_YCC(const uint8 *pSrc, int width, int bpp, int y)
 {
     if (bpp == 4) {
-        RGB_to_YCC(m_image, reinterpret_cast<const rgba *>(pSrc), width, y);
+        RGB_to_YCC(m_image, (pSrc), width, y);
     } else if (bpp == 3) {
-        RGB_to_YCC(m_image, reinterpret_cast<const rgb *>(pSrc), width, y);
+        RGB_to_YCC(m_image, (pSrc), width, y);
     } else {
         Y_to_YCC(m_image, pSrc, width, y);
     }
@@ -929,7 +933,7 @@ bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, in
     if (bpp != 1 && bpp != 3 && bpp != 4) {
         return false;
     }
-#pragma omp parallel for schedule(dynamic)
+
 	for (int y = 0; y < height; y++) {
         if (m_num_components == 1) {
             load_mcu_Y(image_data + width * y * bpp, width, bpp, y);
@@ -939,7 +943,6 @@ bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, in
     }
 
     for(int c=0; c < m_num_components; c++) {
-#pragma omp parallel for schedule(dynamic)
         for (int y = height; y < m_image[c].m_y; y++) {
             for(int x=0; x < m_image[c].m_x; x++) {
                 m_image[c].set_px(m_image[c].get_px(x, y-1), x, y);

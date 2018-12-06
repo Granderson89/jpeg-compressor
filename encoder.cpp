@@ -283,7 +283,7 @@ int main(int arg_c, char *ppArgs[])
 	char *quality = "50";
 
 	// Loop over all image resolutions
-	for (int res = 320; res <= 2430; res *= 1.5)
+	for (int res = 320; res <= 320; res *= 1.5)
 	{
 		// Set up input argument
 		string s = "images/space" + to_string(res) + ".png";
