@@ -79,7 +79,7 @@ namespace jpge
 			Platform::get(&platforms);
 			// Assume only one platform.  Get GPU devices.
 			vector<Device> devices;
-			platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &devices);
+			platforms[1].getDevices(CL_DEVICE_TYPE_GPU, &devices);
 			// Create a context with these devices
 			Context context(devices);
 			// Create a command queue for device 0

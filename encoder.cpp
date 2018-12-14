@@ -277,11 +277,11 @@ int main(int arg_c, char *ppArgs[])
     bool use_jpgd = true;
 
 	// Create data file
-	ofstream data("png_to_jpeg_oclbetter.csv", ofstream::out);
+	ofstream data("png_to_jpeg_ocl.csv", ofstream::out);
 	// Set up constant arguments
 	char *output = "output.jpg";
-	int resolutions[8] = {256, 512, 768, 1024, 1280, 2560, 5120, 6400};
-	char *qualities[10] = {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100"};
+	int resolutions[8] = { 256, 512, 768, 1024, 1280, 2560, 5120, 6400};
+	char *qualities[10] = { "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"};
 	// Loop over qualities
 	for (char *quality : qualities)
 	{
@@ -425,7 +425,7 @@ int main(int arg_c, char *ppArgs[])
 				**  COMPRESSION HAPPENS HERE
 				*/
 				// Execute 100 iterations
-				for (size_t iters = 0; iters < 10; ++iters)
+				for (size_t iters = 0; iters < 100; ++iters)
 				{
 					// Output iteration to console
 					std::cout << "Iteration: " << iters << std::endl;
