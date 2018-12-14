@@ -280,7 +280,7 @@ int main(int arg_c, char *ppArgs[])
 	ofstream data("png_to_jpeg_oclbetter.csv", ofstream::out);
 	// Set up constant arguments
 	char *output = "output.jpg";
-	int resolutions[7] = {256, 512, 768, 1024, 1280, 2560, 5120};
+	int resolutions[8] = {256, 512, 768, 1024, 1280, 2560, 5120, 6400};
 	char *qualities[10] = {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100"};
 	// Loop over qualities
 	for (char *quality : qualities)
