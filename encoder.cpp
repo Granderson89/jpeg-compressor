@@ -276,6 +276,7 @@ int main(int arg_c, char *ppArgs[])
     int subsampling = -1;
     bool use_jpgd = true;
 
+	// ***ADDITIONS***
 	// Create data file
 	ofstream data("png_to_jpeg_ocl.csv", ofstream::out);
 	// Set up constant arguments
@@ -300,7 +301,7 @@ int main(int arg_c, char *ppArgs[])
 			ppArgs[2] = output;
 			ppArgs[3] = quality;
 			arg_c = 4;
-
+			// ***END ADDITIONS***
 			int arg_index = 1;
 			while ((arg_index < arg_c) && (ppArgs[arg_index][0] == '-')) {
 				switch (tolower(ppArgs[arg_index][1])) {
@@ -421,9 +422,8 @@ int main(int arg_c, char *ppArgs[])
 				}
 			}
 			else {
-				/*
-				**  COMPRESSION HAPPENS HERE
-				*/
+				// ***ADDITIONS
+				// COMPRESSION HAPPENS HERE
 				// Execute 100 iterations
 				for (size_t iters = 0; iters < 100; ++iters)
 				{
@@ -444,6 +444,7 @@ int main(int arg_c, char *ppArgs[])
 					data << ", " << duration_cast<microseconds>(total).count();
 				}
 				data << endl;
+				// ***END ADDITIONS***
 			}
 
 			const long comp_file_size = get_file_size(pDst_filename);

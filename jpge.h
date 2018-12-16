@@ -125,6 +125,7 @@ public:
 
     float get_px(int x, int y);
     void set_px(float px, int x, int y);
+	// ***ADDITIONS***
 	float* get_pixels() { return m_pixels; }
 
     void load_block(dct_t *, int x, int y);
@@ -171,6 +172,7 @@ public:
     bool compress_image();
     void load_mcu_Y(const uint8 *pSrc, int width, int bpp, int y);
     void load_mcu_YCC(const uint8 *pSrc, int width, int bpp, int y);
+	// ***ADDITIONS***
 	void load_mcu_YCC_GPU(const uint8 *pSrc, int width, int height, int bpp);
 
 

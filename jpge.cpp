@@ -71,6 +71,7 @@ namespace jpge
 		}*/
 	}
 
+	// ***ADDITIONS***
 	template<class T> static void RGB_to_YCC_GPU(image *img, const T *src, int width, int height, int bpp)
 	{
 		try
@@ -78,7 +79,7 @@ namespace jpge
 			// Get the platforms
 			vector<Platform> platforms;
 			Platform::get(&platforms);
-			// Assume only one platform.  Get GPU devices.
+			// Get GPU devices
 			vector<Device> devices;
 			platforms[1].getDevices(CL_DEVICE_TYPE_GPU, &devices);
 			// Create a context with these devices
@@ -87,9 +88,9 @@ namespace jpge
 			CommandQueue queue(context, devices[0]);
 
 			// Create the buffers
-			// Input buffer
+			// Input buffer for source image
 			Buffer bufSrc(context, CL_MEM_READ_ONLY, sizeof(unsigned char) * width * height * bpp);
-			// Output buffers
+			// Output buffers for converted image
 			Buffer bufY(context, CL_MEM_READ_ONLY, sizeof(float) * width * height);
 			Buffer bufC1(context, CL_MEM_READ_ONLY, sizeof(float) * width * height);
 			Buffer bufC2(context, CL_MEM_READ_ONLY, sizeof(float) * width * height);
@@ -122,7 +123,7 @@ namespace jpge
 			NDRange local(256);
 			queue.enqueueNDRangeKernel(rgb_to_ycc_kernel, NullRange, global, local);
 
-			// Copy result back.
+			// Copy result back directly into image pixels
 			queue.enqueueReadBuffer(bufY, CL_TRUE, 0, sizeof(float) * width * height, &img[0].get_pixels()[0]);
 			queue.enqueueReadBuffer(bufC1, CL_TRUE, 0, sizeof(float) * width * height, &img[1].get_pixels()[0]);
 			queue.enqueueReadBuffer(bufC2, CL_TRUE, 0, sizeof(float) * width * height, &img[2].get_pixels()[0]);
@@ -165,6 +166,7 @@ namespace jpge
 		return &m_dctqs[64 * (y / 8 * m_x / 8 + x / 8)];
 	}
 
+	// ***ADDITIONS***
 	void image::subsample(image &luma, int v_samp)
 	{
 		if (v_samp == 2) {
@@ -909,6 +911,7 @@ namespace jpge
 		return m_all_stream_writes_succeeded;
 	}
 
+	// ***ADDITIONS***
 	bool jpeg_encoder::compress_image()
 	{
 		for (int c = 0; c < m_num_components; c++) {
@@ -979,17 +982,10 @@ namespace jpge
 		}
 	}
 
+	// ***ADDITIONS***
 	void jpeg_encoder::load_mcu_YCC_GPU(const uint8 *pSrc, int width, int height, int bpp)
 	{
 		RGB_to_YCC_GPU(m_image, pSrc, width, height, bpp);
-		
-		// Possibly duplicate pixels at end of scanline if not a multiple of 8 or 16
-		/*for (int c = 0; c < m_num_components; c++) {
-			const float lastpx = m_image[c].get_px(width - 1, y);
-			for (int x = width; x < m_image[0].m_x; x++) {
-				m_image[c].set_px(lastpx, x, y);
-			}
-		}*/
 	}
 
 	void jpeg_encoder::clear()
@@ -1027,6 +1023,7 @@ namespace jpge
 		clear();
 	}
 
+	// ***ADDITIONS***
 	bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, int bpp)
 	{
 		if (bpp != 1 && bpp != 3 && bpp != 4) {
