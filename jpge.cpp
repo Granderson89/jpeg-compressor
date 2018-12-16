@@ -27,6 +27,7 @@
 #include <vector>
 #include <fstream>
 #include <CL/cl.hpp>
+#include <omp.h>
 
 using namespace std;
 using namespace cl;
@@ -167,6 +168,7 @@ namespace jpge
 	void image::subsample(image &luma, int v_samp)
 	{
 		if (v_samp == 2) {
+			#pragma omp parallel for schedule(dynamic)
 			for (int y = 0; y < m_y; y += 2) {
 				for (int x = 0; x < m_x; x += 2) {
 					m_pixels[m_x / 4 * y + x / 2] = blend_quad(x, y, luma);
@@ -910,6 +912,7 @@ namespace jpge
 	bool jpeg_encoder::compress_image()
 	{
 		for (int c = 0; c < m_num_components; c++) {
+			#pragma omp parallel for schedule(dynamic)
 			for (int y = 0; y < m_image[c].m_y; y += 8) {
 				for (int x = 0; x < m_image[c].m_x; x += 8) {
 					dct_t sample[64];
@@ -918,7 +921,7 @@ namespace jpge
 				}
 			}
 		}
-
+		#pragma omp parallel for schedule(dynamic)
 		for (int y = 0; y < m_y; y += m_mcu_h) {
 			code_mcu_row(y, false);
 		}
@@ -1042,6 +1045,7 @@ namespace jpge
 		}
 
 		for (int c = 0; c < m_num_components; c++) {
+			#pragma omp parallel for schedule(dynamic)
 			for (int y = height; y < m_image[c].m_y; y++) {
 				for (int x = 0; x < m_image[c].m_x; x++) {
 					m_image[c].set_px(m_image[c].get_px(x, y - 1), x, y);
