@@ -276,15 +276,15 @@ int main(int arg_c, char *ppArgs[])
     int subsampling = -1;
     bool use_jpgd = true;
 
+	// ***ADDITIONS***
 	// Create data file
-	ofstream data("png_to_jpeg_baselinerest.csv", ofstream::out);
+	ofstream data("png_to_jpeg_baseline.csv", ofstream::out);
 	// Set up constant arguments
 	char *output = "output.jpg";
 	int resolutions[8] = { 256, 512, 768, 1024, 1280, 2560, 5120, 6400};
-	char *qualities[10] = {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100" };
+	char *qualities[10] = { "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" };
 	// Loop over qualities
-	for (char *quality : qualities)
-	{
+	for (char *quality : qualities) {
 		cout << "Quality " << quality << endl;
 		data << "quality_" << quality << endl;
 	
@@ -301,7 +301,7 @@ int main(int arg_c, char *ppArgs[])
 			ppArgs[2] = output;
 			ppArgs[3] = quality;
 			arg_c = 4;
-
+			// ***END ADDITIONS***
 			int arg_index = 1;
 			while ((arg_index < arg_c) && (ppArgs[arg_index][0] == '-')) {
 				switch (tolower(ppArgs[arg_index][1])) {
@@ -422,12 +422,10 @@ int main(int arg_c, char *ppArgs[])
 				}
 			}
 			else {
-				/*
-				**  COMPRESSION HAPPENS HERE
-				*/
+				// ***ADDITIONS***
+				// COMPRESSION HAPPENS HERE
 				// Execute 100 iterations
-				for (size_t iters = 0; iters < 100; ++iters)
-				{
+				for (size_t iters = 0; iters < 100; ++iters) {
 					// Output iteration to console
 					std::cout << "Iteration: " << iters << std::endl;
 					// Get the start time
@@ -445,6 +443,7 @@ int main(int arg_c, char *ppArgs[])
 					data << ", " << duration_cast<microseconds>(total).count();
 				}
 				data << endl;
+				// ***END ADDITIONS***
 			}
 
 			const long comp_file_size = get_file_size(pDst_filename);
