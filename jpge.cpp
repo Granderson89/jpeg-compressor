@@ -94,10 +94,11 @@ dctq_t *image::get_dctq(int x, int y)
     return &m_dctqs[64*(y/8 * m_x/8 + x/8)];
 }
 
+// ***ADDITIONS***
 void image::subsample(image &luma, int v_samp)
 {
     if (v_samp == 2) {
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
         for(int y=0; y < m_y; y+=2) {
             for(int x=0; x < m_x; x+=2) {
                 m_pixels[m_x/4*y + x/2] = blend_quad(x, y, luma);
@@ -823,10 +824,11 @@ bool jpeg_encoder::emit_end_markers()
     return m_all_stream_writes_succeeded;
 }
 
+// ***ADDITIONS***
 bool jpeg_encoder::compress_image()
 {
     for(int c=0; c < m_num_components; c++) {
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
         for (int y = 0; y < m_image[c].m_y; y+= 8) {
             for (int x = 0; x < m_image[c].m_x; x += 8) {
                 dct_t sample[64];
@@ -835,7 +837,7 @@ bool jpeg_encoder::compress_image()
             }
         }
     }
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
     for (int y = 0; y < m_y; y+= m_mcu_h) {
         code_mcu_row(y, false);
     }
@@ -924,6 +926,7 @@ void jpeg_encoder::deinit()
     clear();
 }
 
+// ***ADDITIONS***
 bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, int bpp)
 {
     if (bpp != 1 && bpp != 3 && bpp != 4) {
@@ -939,7 +942,7 @@ bool jpeg_encoder::read_image(const uint8 *image_data, int width, int height, in
     }
 
     for(int c=0; c < m_num_components; c++) {
-//#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
         for (int y = height; y < m_image[c].m_y; y++) {
             for(int x=0; x < m_image[c].m_x; x++) {
                 m_image[c].set_px(m_image[c].get_px(x, y-1), x, y);
